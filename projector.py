@@ -1,6 +1,4 @@
-from __future__ import print_function
 import serial
-import time
 
 class Button(object):
     # TODO: generate strings based on class introspection?
@@ -134,7 +132,7 @@ class Projector(object):
         else:
             pkt = [header, self.unit_id, cmd, footer]
 
-        self.port.write (''.join (pkt))
+        self.port.write (b''.join (pkt))
 
         # check for the command we sent back out, unless another was specified
         if not response_cmd:
@@ -189,10 +187,10 @@ class Projector(object):
 
         # note these are strings
         modes = {
-            '\x30': 'standby',
-            '\x31': 'power-on',
-            '\x32': 'cool-down',
-            '\x34': 'warning'
+            b'\x30': 'standby',
+            b'\x31': 'power-on',
+            b'\x32': 'cool-down',
+            b'\x34': 'warning'
         }
 
         if state in modes:
@@ -212,11 +210,11 @@ class Projector(object):
             return False
 
         video_states = {
-            InputSource.S_VIDEO: '\x30',
-            InputSource.VIDEO: '\x31',
-            InputSource.COMPUTER: '\x32',
-            InputSource.HDMI_1: '\x36',
-            InputSource.HDMI_2: '\x37'
+            InputSource.S_VIDEO: b'\x30',
+            InputSource.VIDEO: b'\x31',
+            InputSource.COMPUTER: b'\x32',
+            InputSource.HDMI_1: b'\x36',
+            InputSource.HDMI_2: b'\x37'
         }
 
         if mode not in video_states:
@@ -234,7 +232,7 @@ class Projector(object):
         #     return None
 
         return self.send_operating(b'\x52\x43\x37\x33',
-            Button.CODES[btn], response_cmd='\x52\x43')
+            Button.CODES[btn], response_cmd=b'\x52\x43')
 
     @property
     def input(self):
@@ -248,11 +246,11 @@ class Projector(object):
 
         # note these are strings
         video_states = {
-            '\x30': InputSource.S_VIDEO,
-            '\x31': InputSource.VIDEO,
-            '\x32': InputSource.COMPUTER,
-            '\x36': InputSource.HDMI_1,
-            '\x37': InputSource.HDMI_2
+            b'\x30': InputSource.S_VIDEO,
+            b'\x31': InputSource.VIDEO,
+            b'\x32': InputSource.COMPUTER,
+            b'\x36': InputSource.HDMI_1,
+            b'\x37': InputSource.HDMI_2
         }
 
         if state in video_states:

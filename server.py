@@ -1,11 +1,12 @@
-from wsgiref.simple_server import make_server
-from sys import exc_info
-from traceback import format_tb
-from wsgiref.util import request_uri, shift_path_info
-from projector import Button, InputSource, HD250, ProjectorCommunicationError
-from itertools import izip
-from functools import wraps
 import json
+
+from functools import wraps
+from traceback import format_tb
+from sys import exc_info
+from wsgiref.simple_server import make_server
+from wsgiref.util import shift_path_info
+
+from projector import Button, InputSource, HD250, ProjectorCommunicationError
 
 projector = None
 
@@ -14,9 +15,8 @@ class WebException (Exception):
         self.code = code
         default_msgs = {
             '404 Not Found': 'The requested resource could not be found.',
-            '503 Service Unavailable': 'The underlying service is not '
-                                       'available.',
-            '500 Internal Server Error': 'An internal exception occured.'
+            '503 Service Unavailable': 'The underlying service is not available.',
+            '500 Internal Server Error': 'An internal exception occurred.'
         }
 
         if not msg:
@@ -52,7 +52,7 @@ def view_buttons():
     return json.dumps({'names': projector.VALID_BUTTONS})
 
 def view_inputs():
-    return json.dumps(dict(izip (projector.VALID_SOURCES,
+    return json.dumps(dict(zip (projector.VALID_SOURCES,
         map (lambda src: InputSource.DISPLAY_NAMES[src],
                          projector.VALID_SOURCES))))
 
@@ -60,7 +60,7 @@ def view_inputs():
 def press(button):
     button = button.lower()
     if button not in Button.CODES:
-        abort ('404 Not Found', 'No such button ' + button)
+        raise WebException ('404 Not Found', 'No such button ' + button)
 
     return json.dumps({'success': projector.press_button (button)})
 
@@ -89,7 +89,7 @@ def off():
     return json.dumps({'success': projector.turn_off()})
 
 def index():
-    return open ('index.html', 'rb')
+    return open ('index.html', 'rt').read()
 
 def remote_webapp (environ, start_response):
     routes = {
@@ -114,27 +114,28 @@ def remote_webapp (environ, start_response):
             handler = routes[base_path]
             result = handler()
             status = '200 OK'  # HTTP Status
-            if type(result) != str and type(result) != unicode:
-                headers = [('Content-type', 'text/html')] 
+            if handler == index:
+                headers = [('Content-type', 'text/html')]
             else:
                 headers = [('Content-type', 'application/json')]
-        except WebException, ex:
+        except WebException as ex:
             status = ex.code
-            headers = [('Content-type', 'text/html')] 
+            headers = [('Content-type', 'text/html')]
             result = str(ex)
         except:
             status = '500 Internal Server Error'
-            headers = [('Content-type', 'text/html')] 
+            headers = [('Content-type', 'text/html')]
             e_type, e_value, tb = exc_info()
             html = ('An internal exception occured. The stacktrace was: '
                    '</p><pre>%s\n%s</pre><p>' % (
                         ''.join (format_tb(tb)),
                         '%s: %s' % (e_type.__name__, e_value)))
             result = str(WebException (status, html))
-        
+
     start_response(status, headers)
 
-    return result
+    result = result.encode('utf8')
+    return [result]
 
 if __name__ == '__main__':
     import sys
@@ -143,7 +144,7 @@ if __name__ == '__main__':
     else:
         projector = HD250 (sys.argv[1], timeout=0.4)
         httpd = make_server('', 8000, remote_webapp)
-        print "Serving on port 8000..."
+        print ("Serving on port 8000...")
 
         # Serve until process is killed
         httpd.serve_forever()
