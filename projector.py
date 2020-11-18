@@ -86,6 +86,7 @@ class Button(object):
 class InputSource (object):
     S_VIDEO = 's-video'
     VIDEO = 'video'
+    COMPONENT = 'component'
     COMPUTER = 'computer'
     HDMI_1 = 'hdmi1'
     HDMI_2 = 'hdmi2'
@@ -93,6 +94,7 @@ class InputSource (object):
     DISPLAY_NAMES = {
         S_VIDEO: 'S-Video',
         VIDEO: 'Video',
+        COMPONENT: 'Component',
         COMPUTER: 'Computer',
         HDMI_1: 'HDMI 1',
         HDMI_2: 'HDMI 2'
@@ -209,13 +211,7 @@ class Projector(object):
         if self.mode != 'power-on':
             return False
 
-        video_states = {
-            InputSource.S_VIDEO: b'\x30',
-            InputSource.VIDEO: b'\x31',
-            InputSource.COMPUTER: b'\x32',
-            InputSource.HDMI_1: b'\x36',
-            InputSource.HDMI_2: b'\x37'
-        }
+        video_states = self.video_sources()
 
         if mode not in video_states:
             return ValueError ("invalid input " + repr(mode))
@@ -245,13 +241,7 @@ class Projector(object):
             return None
 
         # note these are strings
-        video_states = {
-            b'\x30': InputSource.S_VIDEO,
-            b'\x31': InputSource.VIDEO,
-            b'\x32': InputSource.COMPUTER,
-            b'\x36': InputSource.HDMI_1,
-            b'\x37': InputSource.HDMI_2
-        }
+        video_states = self.video_source_codes()
 
         if state in video_states:
             return video_states[state]
@@ -261,6 +251,24 @@ class Projector(object):
     @property
     def model(self):
         return self.send_operating(b'\x4d\x44')
+
+    def video_sources(self):
+        return {
+            InputSource.S_VIDEO: b'\x30',
+            InputSource.VIDEO: b'\x31',
+            InputSource.COMPUTER: b'\x32',
+            InputSource.HDMI_1: b'\x36',
+            InputSource.HDMI_2: b'\x37'
+        }
+
+    def video_source_codes(self):
+        return {
+            b'\x30': InputSource.S_VIDEO,
+            b'\x31': InputSource.VIDEO,
+            b'\x32': InputSource.COMPUTER,
+            b'\x36': InputSource.HDMI_1,
+            b'\x37': InputSource.HDMI_2
+        }
 
 class HD250 (Projector):
     VALID_SOURCES = [
@@ -306,6 +314,20 @@ class HD250 (Projector):
         Button.ASPECT,
     ]
 
+    SOURCES_MAP = {
+        InputSource.COMPONENT: b'\x32',
+        InputSource.HDMI_1: b'\x36',
+        InputSource.HDMI_2: b'\x37'
+    }
+
+    SOURCES_CODES = {code: name for name, code in SOURCES_MAP.items()}
+
+    def video_sources(self):
+        return self.SOURCES_MAP
+
+    def video_source_codes(self):
+        return self.SOURCES_CODES
+
     @property
     def model(self):
         return 'DLA-HD250'
@@ -313,7 +335,7 @@ class HD250 (Projector):
 
 class RS40 (Projector):
     VALID_SOURCES = [
-        InputSource.S_VIDEO,
+        InputSource.COMPONENT,
         InputSource.HDMI_1,
         InputSource.HDMI_2
     ]
@@ -344,6 +366,22 @@ class RS40 (Projector):
         Button.COLOR_TEMP,
         Button.ASPECT,
     ]
+
+    SOURCES_MAP = {
+        InputSource.S_VIDEO: b'\x30',
+        InputSource.VIDEO: b'\x31',
+        InputSource.COMPUTER: b'\x32',
+        InputSource.HDMI_1: b'\x36',
+        InputSource.HDMI_2: b'\x37'
+    }
+
+    SOURCES_CODES = {code: name for name, code in SOURCES_MAP.items()}
+
+    def video_sources(self):
+        return self.SOURCES_MAP
+
+    def video_source_codes(self):
+        return self.SOURCES_CODES
 
     @property
     def model(self):
