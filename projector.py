@@ -310,6 +310,45 @@ class HD250 (Projector):
     def model(self):
         return 'DLA-HD250'
 
+
+class RS40 (Projector):
+    VALID_SOURCES = [
+        InputSource.S_VIDEO,
+        InputSource.HDMI_1,
+        InputSource.HDMI_2
+    ]
+
+    VALID_BUTTONS = [
+        Button.UP,
+        Button.DOWN,
+        Button.BACK,
+        Button.ON,
+        Button.STANDBY,
+        Button.HIDE,
+        Button.LENS_APERTURE,
+        Button.MENU,
+        Button.OK,
+        Button.LENS,
+        Button.RIGHT,
+        Button.LEFT,
+        Button.STAGE,
+        Button.CINEMA2,
+        Button.CINEMA1,
+        Button.NATURAL,
+        Button.DYNAMIC,
+        Button.USER1,
+        Button.USER2,
+        Button.USER3,
+        Button.INFO,
+        Button.GAMMA,
+        Button.COLOR_TEMP,
+        Button.ASPECT,
+    ]
+
+    @property
+    def model(self):
+        return 'DLA-RS40'
+
 if __name__ == '__main__':
     p = HD250 ('/dev/ttyUSB0')
 

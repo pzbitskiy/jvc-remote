@@ -6,7 +6,7 @@ from sys import exc_info
 from wsgiref.simple_server import make_server
 from wsgiref.util import shift_path_info
 
-from projector import Button, InputSource, HD250, ProjectorCommunicationError
+from projector import Button, InputSource, RS40, ProjectorCommunicationError
 
 projector = None
 
@@ -142,7 +142,7 @@ if __name__ == '__main__':
     if len(sys.argv) != 2:
         sys.stderr.write ("Usage: %s [serial device]\n" % sys.argv[0])
     else:
-        projector = HD250 (sys.argv[1], timeout=0.4)
+        projector = RS40 (sys.argv[1], timeout=0.4)
         httpd = make_server('', 8000, remote_webapp)
         print ("Serving on port 8000...")
 
