@@ -149,9 +149,9 @@ class Projector(object):
             raise ProjectorCommunicationError("no response from projector")
 
         result_code = resp[0]
-        if result_code == b"\x06":
+        if result_code == 0x06:
             msgtype = "ack"
-        elif result_code == b"\x40":
+        elif result_code == 0x040:
             msgtype = "data"
         else:
             raise ProjectorCommunicationError(
@@ -189,7 +189,10 @@ class Projector(object):
 
     @property
     def mode(self):
-        success, state = self.send_reference(b"\x50\x57")
+        try:
+            success, state = self.send_reference(b"\x50\x57")
+        except Exception as ex:
+            print(ex)
         if not success:
             return None
 
