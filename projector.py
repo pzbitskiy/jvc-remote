@@ -1,3 +1,4 @@
+from abc import abstractmethod
 import serial
 
 
@@ -96,15 +97,16 @@ class InputSource(object):
         HDMI_2: "HDMI 2",
     }
 
+    @classmethod
+    def name(cls, name):
+        return cls.DISPLAY_NAMES[name]
+
 
 class ProjectorCommunicationError(Exception):
     pass
 
 
 class Projector(object):
-    # to be overwritten by child classes
-    VALID_BUTTONS = []
-    VALID_SOURCES = []
 
     def __init__(self, port_url, unit_id=b"\x89\x01", timeout=1):
         self.url = port_url
@@ -215,21 +217,20 @@ class Projector(object):
     def turn_off(self):
         return self.send_operating(b"\x50\x57", b"\x30")
 
-    def set_input(self, mode):
+    def set_input(self, source):
         # this command is only valid when powered on
         if self.mode != "power-on":
             return False
 
-        video_states = self.video_sources()
+        try:
+            code = self.source_to_code(source)
+        except KeyError:
+            return ValueError("invalid input " + repr(source))
 
-        if mode not in video_states:
-            return ValueError("invalid input " + repr(mode))
-
-        cmd_state = video_states[mode]
-        return self.send_operating(b"\x49\x50", cmd_state)
+        return self.send_operating(b"\x49\x50", code)
 
     def press_button(self, btn):
-        if btn not in self.VALID_BUTTONS:
+        if btn not in self.valid_buttons:
             raise ValueError("unsupported button " + repr(btn))
 
         # this command is not in standby
@@ -251,46 +252,38 @@ class Projector(object):
             return None
 
         # note these are strings
-        video_states = self.video_source_codes()
+        try:
+            source = self.code_to_source(state)
+        except KeyError:
+            raise ValueError("unknown video state " + repr(state))
 
-        if state in video_states:
-            return video_states[state]
-
-        raise ValueError("unknown video state " + repr(state))
+        return source
 
     @property
     def model(self):
         return self.send_operating(b"\x4d\x44")
 
-    def video_sources(self):
-        return {
-            InputSource.S_VIDEO: b"\x30",
-            InputSource.VIDEO: b"\x31",
-            InputSource.COMPUTER: b"\x32",
-            InputSource.HDMI_1: b"\x36",
-            InputSource.HDMI_2: b"\x37",
-        }
+    @abstractmethod
+    def source_to_code(self, source):
+        pass
 
-    def video_source_codes(self):
-        return {
-            b"\x30": InputSource.S_VIDEO,
-            b"\x31": InputSource.VIDEO,
-            b"\x32": InputSource.COMPUTER,
-            b"\x36": InputSource.HDMI_1,
-            b"\x37": InputSource.HDMI_2,
-        }
+    @abstractmethod
+    def code_to_source(self, code):
+        pass
+
+    @property
+    @abstractmethod
+    def valid_sources(self):
+        pass
+
+    @property
+    @abstractmethod
+    def valid_buttons(self):
+        pass
 
 
 class HD250(Projector):
-    VALID_SOURCES = [
-        InputSource.S_VIDEO,
-        InputSource.VIDEO,
-        InputSource.COMPUTER,
-        InputSource.HDMI_1,
-        InputSource.HDMI_2,
-    ]
-
-    VALID_BUTTONS = [
+    VALID_BUTTONS = set([
         Button.UP,
         Button.DOWN,
         Button.BACK,
@@ -323,21 +316,36 @@ class HD250(Projector):
         Button.GAMMA,
         Button.COLOR_TEMP,
         Button.ASPECT,
-    ]
+    ])
 
-    SOURCES_MAP = {
-        InputSource.COMPONENT: b"\x32",
+    INPUT_SOURCES = {
+        InputSource.S_VIDEO: b"\x30",
+        InputSource.VIDEO: b"\x31",
+        InputSource.COMPUTER: b"\x32",
         InputSource.HDMI_1: b"\x36",
         InputSource.HDMI_2: b"\x37",
     }
 
-    SOURCES_CODES = {code: name for name, code in SOURCES_MAP.items()}
+    SOURCE_CODES = {code: name for name, code in INPUT_SOURCES.items()}
 
-    def video_sources(self):
-        return self.SOURCES_MAP
+    VALID_SOURCES = {name for name in INPUT_SOURCES.keys()}
 
-    def video_source_codes(self):
-        return self.SOURCES_CODES
+    @property
+    def valid_sources(self):
+        result = {}
+        for src in self.VALID_SOURCES:
+            result[src] = InputSource.name(src)
+        return result
+
+    @property
+    def valid_buttons(self):
+        return self.VALID_BUTTONS
+
+    def source_to_code(self, source):
+        return self.INPUT_SOURCES[source]
+
+    def code_to_source(self, code):
+        return self.SOURCE_CODES[code]
 
     @property
     def model(self):
@@ -345,9 +353,7 @@ class HD250(Projector):
 
 
 class RS40(Projector):
-    VALID_SOURCES = [InputSource.COMPONENT, InputSource.HDMI_1, InputSource.HDMI_2]
-
-    VALID_BUTTONS = [
+    VALID_BUTTONS = set([
         Button.UP,
         Button.DOWN,
         Button.BACK,
@@ -372,23 +378,33 @@ class RS40(Projector):
         Button.GAMMA,
         Button.COLOR_TEMP,
         Button.ASPECT,
-    ]
+    ])
 
-    SOURCES_MAP = {
-        InputSource.S_VIDEO: b"\x30",
-        InputSource.VIDEO: b"\x31",
-        InputSource.COMPUTER: b"\x32",
+    INPUT_SOURCES = {
+        InputSource.COMPONENT: b"\x32",
         InputSource.HDMI_1: b"\x36",
         InputSource.HDMI_2: b"\x37",
     }
+    SOURCE_CODES = {code: name for name, code in INPUT_SOURCES.items()}
 
-    SOURCES_CODES = {code: name for name, code in SOURCES_MAP.items()}
+    VALID_SOURCES = {name for name in INPUT_SOURCES.keys()}
 
-    def video_sources(self):
-        return self.SOURCES_MAP
+    @property
+    def valid_sources(self):
+        result = {}
+        for src in self.VALID_SOURCES:
+            result[src] = InputSource.name(src)
+        return result
 
-    def video_source_codes(self):
-        return self.SOURCES_CODES
+    @property
+    def valid_buttons(self):
+        return self.VALID_BUTTONS
+
+    def source_to_code(self, source):
+        return self.INPUT_SOURCES[source]
+
+    def code_to_source(self, code):
+        return self.SOURCE_CODES[code]
 
     @property
     def model(self):

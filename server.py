@@ -56,20 +56,12 @@ def projector_command(f):
 # information only (this may change if we
 # implement an auto-instanciated projector class)
 def view_buttons():
-    return json.dumps({"names": projector.VALID_BUTTONS})
+    return json.dumps({"names": projector.valid_buttons})
 
 
 def view_inputs():
-    return json.dumps(
-        dict(
-            zip(
-                projector.VALID_SOURCES,
-                map(
-                    lambda src: InputSource.DISPLAY_NAMES[src], projector.VALID_SOURCES
-                ),
-            )
-        )
-    )
+    sources = {k: v for k, v in sorted(projector.valid_sources.items(), key=lambda x: x[1])}
+    return json.dumps(sources)
 
 
 @projector_command
@@ -90,9 +82,9 @@ def projector_status():
 
 @projector_command
 def set_input(source):
-    source = source.lower()
-    if source not in projector.VALID_SOURCES:
-        raise WebException("404 Not Found", "Invalid mode " + source)
+    # source = source.lower()
+    if source not in projector.valid_sources:
+        raise WebException("404 Not Found", "Invalid source " + source)
 
     return json.dumps({"success": projector.set_input(source)})
 

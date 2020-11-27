@@ -47,23 +47,7 @@
       <div class="content">
         <div class="content-block-title">Input sources</div>
           <div class="list-block onmode disabled">
-            <ul>
-              <li>
-                <a href="/input/s-video" data-source="s-video" class="press-btn source item-link list-button">S-Video</a>
-              </li>
-              <li>
-                <a href="/input/video" data-source="video" class="press-btn source item-link list-button">Video</a>
-              </li>
-              <li>
-                <a href="/input/computer" data-source="computer" class="press-btn source item-link list-button">Computer</a>
-              </li>
-              <li>
-                <a href="/input/hdmi1" data-source="hdmi1" class="press-btn source item-link list-button">HDMI 1</a>
-              </li>
-              <li>
-                <a href="/input/hdmi2" data-source="hdmi2" class="press-btn source item-link list-button">HDMI 2</a>
-              </li>
-              {% endfor %}
+            <ul id="input-sources">
             </ul>
           </div>
       </div>
@@ -294,13 +278,27 @@
             document.waitingForState = null;
           }
         })
-      }, 800);
+      }, 1000);
 
-      $$('.press-btn').on ('click', function (e) {
-        e.preventDefault(); // FIXME: throws an exception inside framework7, but does what we want
-        $$.get($$(e.target).attr('href'));
+      $$.getJSON('/inputs', function (data) {
+        let list = $$('#input-sources');
+        for (let source in data) {
+          const a = document.createElement('a');
+          $$(a).attr({
+            href: "/input/" + source,
+            "data-source": source,
+            class: "press-btn source item-link list-button"
+          }).text(data[source]);
+
+          const li = document.createElement('li');
+          li.append(a);
+          list.append(li);
+        }
+        $$('.press-btn').on ('click', function (e) {
+          e.preventDefault(); // FIXME: throws an exception inside framework7, but does what we want
+          $$.get($$(e.target).attr('href'));
+        });
       });
-
 
       document.onStateUpdate();
     </script>
