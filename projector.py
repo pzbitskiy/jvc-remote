@@ -191,10 +191,12 @@ class Projector(object):
 
     @property
     def mode(self):
+        success = None
         try:
             success, state = self.send_reference(b"\x50\x57")
         except Exception as ex:
             print(ex)
+
         if not success:
             return None
 
